@@ -1,20 +1,62 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# EchoForge Voice Cloner
 
-# Run and deploy your AI Studio app
+Clonagem de voz com Google Cloud TTS (Chirp 3 HD).
 
-This contains everything you need to run your app locally.
+## Stack
 
-View your app in AI Studio: https://ai.studio/apps/drive/1ZVHpqhKZLlIKUiPSuWGOXthCE9FeFffI
+| Camada | Tecnologia |
+|--------|------------|
+| Frontend | React 19, TypeScript, Vite |
+| Backend | Python 3.12, FastAPI |
+| TTS | Google Cloud TTS v1beta1 (Chirp 3) |
+| Deploy | Google Cloud Run |
 
-## Run Locally
+## Estrutura
 
-**Prerequisites:**  Node.js
+```
+voice-cloner/
+├── components/      # Componentes React
+├── services/        # Cliente API
+├── backend/         # FastAPI + GCP TTS
+└── docs/            # Planos e documentacao
+```
 
+## Comandos
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+# Frontend
+bun install && bun run dev
+
+# Backend
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8080
+```
+
+## Documentacao
+
+| Arquivo | Conteudo |
+|---------|----------|
+| `CLAUDE.md` | Regras operacionais para Claude Code |
+| `backend/CLAUDE.md` | Regras especificas do backend |
+
+## Git
+
+**OBRIGATORIO:**
+
+1. **Branch para alteracoes significativas** — >3 arquivos OU mudanca estrutural = criar branch
+2. **Pull antes de trabalhar** — `git pull origin main`
+3. **Commit ao finalizar** — Nunca deixar trabalho nao commitado
+4. **Deletar branch apos merge** — Local e remota
+
+## Erros Conhecidos
+
+| Data | Erro | Solucao |
+|------|------|---------|
+| - | - | - |
+
+## Links
+
+- [Chirp 3 Docs](https://cloud.google.com/text-to-speech/docs/voice-clone)
+- Backend prod: https://voice-cloner-api-105426697046.us-west1.run.app
