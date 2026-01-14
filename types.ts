@@ -12,12 +12,23 @@ export interface VoiceConfig {
 
 export interface VoiceCloneState {
     referenceFile: File | null;
+    consentFile: Blob | null;
     textInput: string;
     voiceConfig: VoiceConfig;
     isProcessing: boolean;
+    processingStep: ProcessingStep;
     resultAudioUrl: string | null;
     error: string | null;
 }
+
+export type ProcessingStep =
+  | 'idle'
+  | 'uploading'
+  | 'analyzing'
+  | 'cloning'
+  | 'synthesizing'
+  | 'complete'
+  | 'error';
 
 export interface DragState {
     isDragging: boolean;

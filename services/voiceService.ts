@@ -1,81 +1,150 @@
-import { VoiceConfig } from '../types';
+import { VoiceConfig, ProcessingStep } from '../types';
+
+// Backend URL - Cloud Run deployed service
+const API_BASE_URL = 'https://voice-cloner-api-105426697046.us-west1.run.app';
+
+export interface CloneVoiceOptions {
+  referenceFile: File;
+  consentFile: Blob;
+  text: string;
+  config: VoiceConfig;
+  languageCode?: string;
+  onProgress?: (step: ProcessingStep) => void;
+}
+
+export interface ConsentScriptResponse {
+  script: string;
+  instructions: string;
+}
 
 /**
- * Service to handle interaction with Google Cloud Text-to-Speech API (V1Beta1).
- * 
- * DEPLOYMENT INSTRUCTIONS (Google Cloud Run):
- * -------------------------------------------
- * 1. This frontend should POST to your backend (e.g., Python/FastAPI or Node.js/Express).
- * 2. Backend must instantiate `TextToSpeechClient`.
- * 3. Input Audio: Convert `referenceFile` to Linear16 or MP3 bytes.
- * 4. Request Payload:
- *    {
- *      input: { text: targetText },
- *      voice: {
- *        languageCode: "en-US", // Detect or select
- *        model: "chirp-3-hd", // **CRITICAL for Instant Custom Voice**
- *        voiceCloneParams: {
- *           voiceCloningKey: "...", // Only if using pre-registered keys
- *           // OR for Instant Cloning (Reference Audio Injection):
- *           referenceAudio: {
- *             audioContent: "<base64_encoded_audio_bytes>" 
- *           }
- *        }
- *      },
- *      audioConfig: {
- *        audioEncoding: config.encoding,
- *        sampleRateHertz: config.sampleRate,
- *        speakingRate: config.speed,
- *        pitch: config.pitch,
- *        // Stability/Similarity are often handled via specific model params or custom voice headers
- *      }
- *    }
+ * Voice Cloning Service
+ * Integrates with Google Cloud TTS via Cloud Run backend
  */
-export const internalGoogleAIService = {
-  cloneVoice: async (referenceFile: File, targetText: string, config: VoiceConfig): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      
-      // 1. Mock Validation (Simulate Backend Checks)
-      if (referenceFile.size > 5 * 1024 * 1024) {
-         reject(new Error("File too large. Google Cloud TTS Instant Voice reference audio should ideally be < 5MB."));
-         return;
+export const voiceService = {
+  /**
+   * Get the consent script that users must read
+   */
+  async getConsentScript(): Promise<ConsentScriptResponse> {
+    const response = await fetch(`${API_BASE_URL}/consent-script`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch consent script');
+    }
+    return response.json();
+  },
+
+  /**
+   * Clone voice using reference audio and consent
+   */
+  async cloneVoice(options: CloneVoiceOptions): Promise<string> {
+    const {
+      referenceFile,
+      consentFile,
+      text,
+      config,
+      languageCode = 'pt-BR',
+      onProgress,
+    } = options;
+
+    // Step 1: Uploading
+    onProgress?.('uploading');
+    await delay(300); // Small delay for visual feedback
+
+    // Validate inputs
+    if (!referenceFile || referenceFile.size === 0) {
+      throw new Error('Reference audio is required');
+    }
+    if (!consentFile || consentFile.size === 0) {
+      throw new Error('Consent audio is required');
+    }
+    if (!text.trim()) {
+      throw new Error('Text is required');
+    }
+
+    // Step 2: Analyzing
+    onProgress?.('analyzing');
+
+    // Build form data
+    const formData = new FormData();
+    formData.append('reference_audio', referenceFile);
+    formData.append('consent_audio', consentFile, 'consent.webm');
+    formData.append('text', text);
+    formData.append('language_code', languageCode);
+
+    // Step 3: Cloning
+    onProgress?.('cloning');
+
+    console.group('[Voice Cloner] API Request');
+    console.log('Endpoint:', `${API_BASE_URL}/api/clone-voice`);
+    console.log('Reference:', referenceFile.name, `(${(referenceFile.size / 1024).toFixed(1)} KB)`);
+    console.log('Consent:', `(${(consentFile.size / 1024).toFixed(1)} KB)`);
+    console.log('Text:', text.substring(0, 50) + (text.length > 50 ? '...' : ''));
+    console.log('Language:', languageCode);
+    console.log('Config:', config);
+    console.groupEnd();
+
+    // Step 4: Synthesizing (API call)
+    onProgress?.('synthesizing');
+
+    const response = await fetch(`${API_BASE_URL}/api/clone-voice`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = 'Voice cloning failed';
+
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.detail || errorMessage;
+      } catch {
+        errorMessage = errorText || errorMessage;
       }
 
-      console.group("🚀 [Mock Backend] Google Cloud Run Service");
-      console.log("Endpoint: POST /api/v1/synthesize");
-      console.log("Target Model: chirp-3-hd (Instant Custom Voice)");
-      
-      // 2. Simulate File Reading
-      console.log(`Reading Reference Audio: ${referenceFile.name} (${(referenceFile.size/1024).toFixed(1)} KB)`);
-      
-      // 3. Log Payload that would be sent to Google Cloud TTS
-      console.log("Generated Payload:", {
-         input: { text: targetText.substring(0, 50) + "..." },
-         voice: {
-           model: "chirp-3-hd",
-           referenceAudioInput: {
-             source: "[Binary Data from File]"
-           }
-         },
-         audioConfig: {
-           audioEncoding: config.encoding,
-           sampleRateHertz: config.sampleRate,
-           speakingRate: config.speed,
-           pitch: config.pitch,
-           effectsProfileId: ["headphone-class-device"]
-         }
-      });
-      console.groupEnd();
+      throw new Error(errorMessage);
+    }
 
-      // 4. Simulate Processing Latency
-      // chirp-3-hd is a large model, latency can be higher than standard TTS
-      const processingTime = 3000 + (Math.random() * 1000);
-      
+    // Get audio blob from response
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+
+    // Step 5: Complete
+    onProgress?.('complete');
+
+    console.log('[Voice Cloner] Success! Audio URL:', audioUrl);
+    return audioUrl;
+  },
+
+  /**
+   * Check if the backend is healthy
+   */
+  async healthCheck(): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/health`);
+      const data = await response.json();
+      return data.status === 'healthy';
+    } catch {
+      return false;
+    }
+  },
+};
+
+// Helper function for delays
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Legacy export for backwards compatibility
+export const internalGoogleAIService = {
+  cloneVoice: async (referenceFile: File, targetText: string, config: VoiceConfig): Promise<string> => {
+    console.warn('[DEPRECATED] Using mock service. Please update to use voiceService.cloneVoice()');
+
+    // Mock implementation for testing without consent
+    return new Promise((resolve) => {
       setTimeout(() => {
-        // Return a mock URL. In a real app, this would be a blob URL from the returned audioContent
-        // or a signed URL to a Cloud Storage bucket.
         resolve("https://actions.google.com/sounds/v1/science_fiction/digital_glitch.ogg");
-      }, processingTime);
+      }, 3000);
     });
   }
 };
