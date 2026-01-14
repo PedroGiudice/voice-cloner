@@ -1,7 +1,13 @@
+export type AudioEncoding = 'MP3' | 'LINEAR16' | 'OGG_OPUS' | 'MULAW';
+
 export interface VoiceConfig {
     pitch: number;
     speed: number;
-    emotion: string;
+    stability: number;
+    similarity: number;
+    sampleRate: number;
+    encoding: AudioEncoding;
+    emotion: string; // Kept for metadata/style hints if supported by custom implementations
 }
 
 export interface VoiceCloneState {

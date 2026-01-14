@@ -13,8 +13,12 @@ const App: React.FC = () => {
     referenceFile: null,
     textInput: '',
     voiceConfig: {
-      pitch: 1.0,
+      pitch: 0.0, // 0.0 is default/natural in Google Cloud TTS
       speed: 1.0,
+      stability: 0.5,
+      similarity: 0.8,
+      sampleRate: 24000,
+      encoding: 'MP3',
       emotion: 'neutral'
     },
     isProcessing: false,
@@ -65,44 +69,44 @@ const App: React.FC = () => {
         isProcessing: false, 
         resultAudioUrl: audioUrl 
       }));
-    } catch (e) {
+    } catch (e: any) {
       // Handle Error (even mock services might throw in real scenarios)
       setState(prev => ({ 
         ...prev, 
         isProcessing: false, 
-        error: "Failed to synthesize voice. Please try again." 
+        error: e.message || "Failed to synthesize voice. Please try again." 
       }));
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-950 flex flex-col font-sans">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-20 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center text-white">
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
               <Mic2 size={18} />
             </div>
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600">
-              EchoForge <span className="font-light text-slate-400">| Voice Cloner</span>
+            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-100 to-slate-400">
+              EchoForge <span className="font-light text-slate-600">| Voice Cloner</span>
             </h1>
           </div>
-          <div className="text-xs font-medium px-2 py-1 bg-indigo-50 text-indigo-700 rounded border border-indigo-100">
-            Preview Environment
+          <div className="text-xs font-medium px-2 py-1 bg-slate-800 text-indigo-400 rounded border border-slate-700/50">
+            Cloud Run Ready
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-grow p-4 md:p-8">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
           
           {/* Left Column: Input Zone */}
           <section className="flex flex-col gap-6">
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+            <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-6">
               <div>
-                <h2 className="text-lg font-semibold text-slate-800 mb-1">Source Audio</h2>
+                <h2 className="text-lg font-semibold text-slate-100 mb-1">Source Audio</h2>
                 <p className="text-sm text-slate-500 mb-4">Upload a clear recording of the voice you wish to clone.</p>
                 <ReferenceAudioInput 
                   file={state.referenceFile} 
@@ -112,7 +116,7 @@ const App: React.FC = () => {
                 />
               </div>
 
-              <div className="border-t border-slate-100 pt-6">
+              <div className="border-t border-slate-800 pt-6">
                 <TargetTextInput 
                   text={state.textInput}
                   onTextChange={handleTextChange}
@@ -120,7 +124,7 @@ const App: React.FC = () => {
                 />
               </div>
 
-              <div className="border-t border-slate-100 pt-6">
+              <div className="border-t border-slate-800 pt-6">
                  <VoiceControls 
                    config={state.voiceConfig}
                    onChange={handleConfigChange}
@@ -131,7 +135,7 @@ const App: React.FC = () => {
 
             {/* Global Error Display */}
             {state.error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 shadow-sm">
+              <div className="bg-rose-900/20 border border-rose-900/50 text-rose-300 px-4 py-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 shadow-lg">
                 <AlertCircle size={20} className="flex-shrink-0" />
                 <span className="text-sm font-medium">{state.error}</span>
               </div>
@@ -140,8 +144,8 @@ const App: React.FC = () => {
 
           {/* Right Column: Output Zone */}
           <section className="flex flex-col h-full">
-             <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm h-full flex flex-col">
-                 <h2 className="text-lg font-semibold text-slate-800 mb-1">Synthesis</h2>
+             <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl h-full flex flex-col sticky top-24">
+                 <h2 className="text-lg font-semibold text-slate-100 mb-1">Synthesis</h2>
                  <p className="text-sm text-slate-500 mb-6">Generate and listen to the result.</p>
                  
                  <div className="flex-grow">

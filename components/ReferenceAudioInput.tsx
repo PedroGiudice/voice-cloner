@@ -40,12 +40,22 @@ export const ReferenceAudioInput: React.FC<ReferenceAudioInputProps> = ({ file, 
   };
 
   const validateAndSetFile = (candidate: File) => {
-    // Basic validation for audio types
-    if (candidate.type.startsWith('audio/') || candidate.name.endsWith('.wav') || candidate.name.endsWith('.mp3')) {
-      onFileSelect(candidate);
-    } else {
-      onError("Invalid file format. Please upload an MP3 or WAV file.");
+    // Google Cloud TTS Instant Voice robustness checks
+    // Ideally > 30s of audio, mono/stereo, WAV/MP3/Linear16
+    const validTypes = ['audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/x-wav'];
+    const maxSize = 10 * 1024 * 1024; // 10MB limit check
+
+    if (!candidate.type.startsWith('audio/') && !candidate.name.match(/\.(mp3|wav)$/i)) {
+       onError("Invalid format. Please upload WAV or MP3 (Linear16 preferred for API).");
+       return;
     }
+
+    if (candidate.size > maxSize) {
+        onError("File too large. Reference audio should be under 10MB for instant cloning.");
+        return;
+    }
+
+    onFileSelect(candidate);
   };
 
   const clearFile = (e: React.MouseEvent) => {
@@ -56,9 +66,12 @@ export const ReferenceAudioInput: React.FC<ReferenceAudioInputProps> = ({ file, 
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-slate-700">
-        Reference Voice <span className="text-rose-500">*</span>
-      </label>
+      <div className="flex justify-between items-center">
+        <label className="block text-sm font-medium text-slate-300">
+            Reference Audio <span className="text-indigo-400">*</span>
+        </label>
+        <span className="text-[10px] text-slate-500 uppercase tracking-wide">For chirp-3-hd</span>
+      </div>
       
       <div
         onDragOver={handleDragOver}
@@ -70,11 +83,11 @@ export const ReferenceAudioInput: React.FC<ReferenceAudioInputProps> = ({ file, 
           border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center
           min-h-[200px]
           ${isDragging 
-            ? 'border-indigo-500 bg-indigo-50/50' 
-            : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'
+            ? 'border-indigo-500 bg-indigo-500/10' 
+            : 'border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800/50'
           }
-          ${disabled ? 'opacity-50 cursor-not-allowed hover:border-slate-300 hover:bg-transparent' : ''}
-          ${file ? 'bg-indigo-50/30 border-indigo-200 border-solid' : ''}
+          ${disabled ? 'opacity-50 cursor-not-allowed hover:border-slate-700 hover:bg-transparent' : ''}
+          ${file ? 'bg-indigo-900/20 border-indigo-500/50 border-solid' : 'bg-slate-900/50'}
         `}
       >
         <input
@@ -88,19 +101,19 @@ export const ReferenceAudioInput: React.FC<ReferenceAudioInputProps> = ({ file, 
 
         {file ? (
           <div className="animate-in fade-in zoom-in duration-300">
-            <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500/30">
               <FileAudio size={32} />
             </div>
-            <p className="text-sm font-semibold text-slate-900 truncate max-w-[200px] mx-auto">
+            <p className="text-sm font-semibold text-slate-200 truncate max-w-[200px] mx-auto">
               {file.name}
             </p>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               {(file.size / 1024 / 1024).toFixed(2)} MB
             </p>
             {!disabled && (
                <button 
                 onClick={clearFile}
-                className="mt-4 inline-flex items-center px-3 py-1.5 text-xs font-medium text-rose-600 bg-rose-50 rounded-full hover:bg-rose-100 transition-colors"
+                className="mt-4 inline-flex items-center px-3 py-1.5 text-xs font-medium text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-full hover:bg-rose-500/20 transition-colors"
                >
                  <X size={14} className="mr-1" /> Remove
                </button>
@@ -108,14 +121,17 @@ export const ReferenceAudioInput: React.FC<ReferenceAudioInputProps> = ({ file, 
           </div>
         ) : (
           <div className="pointer-events-none">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors ${isDragging ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500'}`}>
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors ${isDragging ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-500 group-hover:bg-indigo-900/30 group-hover:text-indigo-400'}`}>
               <UploadCloud size={24} />
             </div>
-            <p className="text-sm font-medium text-slate-900">
+            <p className="text-sm font-medium text-slate-300">
               {isDragging ? 'Drop audio here' : 'Click or drag to upload'}
             </p>
-            <p className="text-xs text-slate-500 mt-1">
-              Supports WAV, MP3 (Max 10MB)
+            <p className="text-xs text-slate-500 mt-1 max-w-[200px] mx-auto">
+              Single speaker, minimal background noise.
+            </p>
+            <p className="text-[10px] text-slate-600 mt-2">
+              Recommended: Linear16 WAV, 24kHz+
             </p>
           </div>
         )}
