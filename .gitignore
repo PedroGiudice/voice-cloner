@@ -22,3 +22,23 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# ADK-Agents venvs and outputs
+ADK-Agents/**/.venv/
+ADK-Agents/**/research_output/
+
+# Environment files
+.env
+.env.local
+*.env
+
+# Audio files (test)
+*.mp3
+*.wav
+*.webm
