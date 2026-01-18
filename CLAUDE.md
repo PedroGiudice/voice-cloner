@@ -50,6 +50,7 @@ voice-cloner/
 |   |-- ConsentAudioInput.tsx
 |   |-- TargetTextInput.tsx
 |   |-- VoiceControls.tsx
+|   |-- ProcessingSteps.tsx
 |   +-- ActionPanel.tsx
 |-- services/
 |   +-- voiceService.ts    # Cliente API para backend
@@ -59,8 +60,45 @@ voice-cloner/
 |   |   +-- gcp_tts.py     # Servico Google Cloud TTS
 |   |-- Dockerfile
 |   +-- requirements.txt
-+-- docs/                  # Documentacao e planos
+|-- .claude/               # Infraestrutura Claude Code
+|   |-- agents/            # 20 subagentes especializados
+|   |-- skills/            # 22 skills
+|   |-- hooks/             # Automacao de sessao
+|   |-- commands/          # Comandos customizados
+|   +-- output-styles/     # Estilos de output
++-- ADK-Agents/            # Agentes Google ADK (experimental)
 ```
+
+---
+
+## Subagentes Recomendados
+
+Subagentes disponiveis em `.claude/agents/` que sao relevantes para este projeto:
+
+| Subagente | Quando Usar |
+|-----------|-------------|
+| `frontend-developer` | Criar/modificar componentes React |
+| `frontend-auditor` | Auditoria de codigo TypeScript/React |
+| `backend-developer` | Criar/modificar endpoints FastAPI |
+| `backend-auditor` | Auditoria de codigo Python |
+| `cloud-run-deployer` | Deploy para Google Cloud Run |
+| `test-writer-fixer` | Escrever e corrigir testes |
+| `tdd-coach` | Desenvolvimento orientado a testes |
+| `gemini-assistant` | Auditoria de arquivos grandes (>600 linhas) |
+
+---
+
+## Skills Recomendadas
+
+Skills disponiveis em `.claude/skills/` que sao relevantes para este projeto:
+
+| Skill | Quando Usar |
+|-------|-------------|
+| `deploy` | Procedimentos de deploy Cloud Run |
+| `systematic-debugging` | Debug metodico de problemas |
+| `verification-before-completion` | Validar entregas antes de finalizar |
+| `test-driven-development` | Workflow TDD |
+| `brainstorming` | Planejamento de features |
 
 ---
 
@@ -112,6 +150,20 @@ gcloud run deploy voice-cloner-api \
   --region us-west1 \
   --allow-unauthenticated
 ```
+
+---
+
+## Hooks Ativos
+
+Hooks configurados em `.claude/settings.json`:
+
+| Evento | Hook | Funcao |
+|--------|------|--------|
+| SessionStart | `auto-branch.sh` | Cria branch automaticamente |
+| SessionStart | `verify-secrets.sh` | Verifica secrets |
+| SessionStart | `venv-activate-global.sh` | Ativa venv |
+| UserPromptSubmit | `improve-prompt.py` | Melhora prompts vagos |
+| PreToolUse (Read) | `suggest-gemini-large-files.js` | Sugere Gemini para arquivos grandes |
 
 ---
 
